@@ -1,8 +1,10 @@
+# modified to use utf-8-sig, which includes the BOM required for Excel to read UTF-8 csv files properly
+
 import csv, codecs, cStringIO
 
 class UTF8Recoder:
     """
-    Iterator that reads an encoded stream and reencodes the input to UTF-8
+    Iterator that reads an encoded stream and reencodes the input to utf-8-sig
     """
     def __init__(self, f, encoding):
         self.reader = codecs.getreader(encoding)(f)
@@ -11,7 +13,7 @@ class UTF8Recoder:
         return self
 
     def next(self):
-        return self.reader.next().encode("utf-8")
+        return self.reader.next().encode("utf-8-sig")
 
 class UnicodeReader:
     """
@@ -19,13 +21,13 @@ class UnicodeReader:
     which is encoded in the given encoding.
     """
 
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8-sig", **kwds):
         f = UTF8Recoder(f, encoding)
         self.reader = csv.reader(f, dialect=dialect, **kwds)
 
     def next(self):
         row = self.reader.next()
-        return [unicode(s, "utf-8") for s in row]
+        return [unicode(s, "utf-8-sig") for s in row]
 
     def __iter__(self):
         return self
@@ -36,7 +38,7 @@ class UnicodeWriter:
     which is encoded in the given encoding.
     """
 
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8-sig", **kwds):
         # Redirect output to a queue
         self.queue = cStringIO.StringIO()
         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
@@ -44,10 +46,10 @@ class UnicodeWriter:
         self.encoder = codecs.getincrementalencoder(encoding)()
 
     def writerow(self, row):
-        self.writer.writerow([s.encode("utf-8") for s in row])
-        # Fetch UTF-8 output from the queue ...
+        self.writer.writerow([s.encode("utf-8-sig") for s in row])
+        # Fetch utf-8-sig output from the queue ...
         data = self.queue.getvalue()
-        data = data.decode("utf-8")
+        data = data.decode("utf-8-sig")
         # ... and reencode it into the target encoding
         data = self.encoder.encode(data)
         # write to the target stream
